@@ -49,13 +49,18 @@ Repo: [Github repo link](https://github.com/yusuf1for1pc-sudo/health-surveillanc
  
 <img width="292" height="584" alt="image" src="https://github.com/user-attachments/assets/ae641934-671f-401b-81a7-9feb1e65b7eb" />
 
-![1](https://github.com/user-attachments/assets/db66ade7-ea95-4db5-a364-1edb87a633c6)
+
+<img width="292" height="584" alt="image" src="https://github.com/user-attachments/assets/c95136a3-f52c-49bb-9fc1-7b616635d4a4" />
 
 
 
 <img width="292" height="584" alt="White Beige Tropical Villa Photo Collage Instagram Post" src="https://github.com/user-attachments/assets/7a03900c-b3e5-4462-8d76-fd3b2bc1a74c" />
 
-<img width="327" height="584" alt="Screenshot 2026-03-01 203331" src="https://github.com/user-attachments/assets/68c38c0c-ca61-44cc-b300-1a372e6e0be7" />
+
+<img width="292" height="584" alt="Screenshot 2026-03-01 203331" src="https://github.com/user-attachments/assets/68c38c0c-ca61-44cc-b300-1a372e6e0be7" />
+
+<img width="292" height="584" alt="image" src="https://github.com/user-attachments/assets/7231e300-fbf9-4c4a-b223-ef09fb710041" />
+
 
 
 
