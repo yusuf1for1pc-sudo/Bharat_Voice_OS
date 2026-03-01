@@ -1,0 +1,100 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+.packages
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/.gradle/
+/android/captures/
+/android/gradlew
+/android/gradlew.bat
+/android/local.properties
+/android/app/src/main/res/drawable-hdpi/
+/android/app/src/main/res/drawable-mdpi/
+/android/app/src/main/res/drawable-xhdpi/
+/android/app/src/main/res/drawable-xxhdpi/
+/android/app/src/main/res/drawable-xxxhdpi/
+
+# iOS related
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Flutter.podspec
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/app.flx
+/ios/Flutter/app.zip
+/ios/Flutter/flutter_assets/
+/ios/ServiceDefinitions.json
+/ios/Runner/GeneratedPluginRegistrant.*
+
+# Python backend
+/backend/__pycache__/
+/backend/*.pyc
+/backend/.env
+*.env
+.venv/
+venv/
+ENV/
+
+# API Keys - NEVER commit these
+*.key
+secrets.json
+api_keys.json
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+
+# Local configuration
+local.properties
+*.local
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+error.txt
+analysis.txt
+analyze_output.txt

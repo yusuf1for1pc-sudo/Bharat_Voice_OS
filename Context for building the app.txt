@@ -1,0 +1,115 @@
+BHARAT VOICE OS — ANTIGRAVITY BUILD PROMPT
+
+WHAT YOU ARE BUILDING
+A Flutter Android app called Bharat Voice OS. A voice-first AI agent that lets any Indian speak in any language — Hindi, English, Hinglish, Marathi — and the app either answers their question or automatically controls other apps on their phone to complete the task.
+The UI has been designed and approved in Stitch AI. Four reference screenshots are attached. Implement exactly what is shown. Do not redesign. Do not add your own creative choices. Match the references pixel-for-pixel.
+
+REFERENCE IMAGES — WHAT EACH ONE SHOWS
+Image 1 — Listening state: The dotted ring stays visible in the top half. A bottom sheet slides up from the bottom covering the lower half of the screen. The sheet has a frosted glass / blurred gray gradient background. At the top of the sheet is a pill-shaped bar with an X button on the left, "Listening..." text in center, settings gear icon on right. Below that is the live transcript in very large bold white text. At the very bottom of the sheet is a small audio waveform icon.
+Image 2 — Active/processing state: The dotted ring has morphed into a large organic blob shape covering most of the screen. It is not a circle anymore. It is irregular, asymmetric, with bumps and indentations. The dots are densely packed. "SPEAK TO BEGIN" in monospace with blinking cursor is centered inside. Bottom left shows "Get started" heading and subtitle. Bottom right shows sparkle star icon. Bottom has a dark circle button with sparkle and a white pill "Get started" button.
+Image 3 — History screen: Pure black background with subtle dot texture. Header row has settings gear circle on left, title text center, search and arrow circles on right. Three large dark rounded cards each showing an emoji/icon, bold title, subtitle description, and timestamp. Bottom has a segmented toggle with "Threads" selected white and "Spaces" unselected.
+Image 4 — Home/onboarding state: Same as Image 2 but the ring is smaller and sparser — more like a thin dotted circle with uneven density. Bottom section has a four-pointed sparkle star icon, large "Get started" heading, gray subtitle, and bottom row with dark sparkle button and white "Get started" pill button.
+
+CRITICAL DESIGN RULES — NEVER BREAK THESE
+Pure black background #000000 on every single screen. Not dark gray. Not navy. Pure black.
+White is the only foreground color. #FFFFFF for primary text and active elements. #999999 for secondary text. #1A1A1A for card backgrounds. #2A2A2A for card borders.
+Zero color anywhere in the UI during normal use. The app is monochrome black and white. The ONLY exception is the edge glow effect which only activates during agent mode and uses a very subtle periwinkle #818CF8 on the left and right screen edges — invisible during all other states.
+The dotted ring component is the heart and soul of this app. It must be built as a custom Flutter painter. It is never a static image. It is never a Lottie animation. It draws individual dots in real time using code.
+Monospace font for "SPEAK TO BEGIN" text only. Use Space Mono or Courier. Everything else uses Inter.
+
+THE DOTTED RING — EXACT BEHAVIOR SPECIFICATION
+This is the most important component. Read this carefully.
+What it looks like: Individual white circular dots arranged roughly in a ring shape. The dots are not uniform — they vary in size and opacity. Dots near the top of the ring are larger and more opaque. Dots near the bottom are smaller and more transparent. This creates a halftone depth effect that makes the ring look three-dimensional. The ring is thick — multiple layers of dots create depth, not just a single line of dots.
+Idle state (Image 4): The ring is roughly circular but not mathematically perfect. It is slightly uneven — thicker in some places, thinner in others. It breathes very slowly, expanding and contracting about 3% in size on a 3-second cycle. The ring takes up roughly the top 55% of the screen height. It rotates very slowly — one full rotation every 12 seconds. "SPEAK TO BEGIN" text with blinking cursor sits centered inside it.
+Active/blob state (Image 2): The ring morphs into a large organic blob. It is not circular at all. It has multiple bumps and indentations — at least 4 to 5 distinct protrusions making it look like a living organism or an amoeba. The blob is large, filling almost the entire width and about 70% of the height. The dots become denser and larger during this state. The morph from circle to blob happens smoothly over 800 milliseconds when the user taps.
+Listening state (Image 1): The ring stays in circle form in the top half while the bottom sheet covers the lower half. When the user speaks, individual dots in the ring jump and pulse in response to the voice amplitude. Dots closer to the user's voice direction get larger. The ring breathes faster — 1.5 second cycle instead of 3 seconds.
+Processing state: The ring rotates faster — one rotation every 3 seconds instead of 12. It maintains the blob shape. It pulses steadily.
+The dot properties that must vary:
+
+Dot size: 2dp minimum to 5dp maximum
+Dot opacity: 5% minimum to 100% maximum
+Dot density: more dots packed near the top arc, fewer near the bottom arc
+The overall thickness of the ring band: approximately 30dp wide, made of overlapping layers of dots at slightly different radii
+The ring is NOT a perfect mathematical circle — even in idle state the radius varies by about plus or minus 5% at different angles, giving it an organic handmade quality
+
+
+SCREEN BY SCREEN IMPLEMENTATION
+Screen 1 — Home / Onboarding (Image 4)
+Full black screen. The dotted ring centered in the upper 55% of the screen. "SPEAK TO BEGIN" in Space Mono font, white, small size, centered inside the ring with a blinking white cursor block after it — the cursor alternates visible and invisible every 600 milliseconds.
+Below the ring, centered on screen: a four-pointed sparkle star shape in white. Not a star emoji. A proper four-pointed star with long thin points, like a compass rose.
+Below the sparkle: "Get started" in Inter Bold, white, large — 32sp.
+Below that: "Control your phone using your voice." in Inter Regular, gray #999999, 15sp.
+Bottom of screen: a row with two elements. Left element is a dark gray circle button containing a sparkle/star icon. Right element is a white pill-shaped button with black text "Get started", fully rounded corners, about 60% of screen width.
+Tapping anywhere on the ring OR tapping "Get started" button transitions to the listening state.
+
+Screen 2 — Listening State (Image 1)
+The dotted ring stays in the upper portion exactly as before. Do not move it. Do not change it.
+A bottom sheet slides up from the bottom of the screen. The bottom sheet covers approximately the bottom 55% of the screen. The sheet background is a frosted glass effect — blurred, translucent gray that gradually becomes more opaque toward the bottom. The top edge of the sheet is rounded with a large radius of about 28dp.
+At the top of the sheet: a single pill-shaped bar spanning most of the width with horizontal padding. The pill has a semi-transparent gray background. Inside the pill on the left: a circular X button in gray. Center of pill: "Listening..." text in white, slightly transparent, 15sp. Right side of pill: a gear settings icon in gray. The pill has the same blurred glass quality as the sheet behind it.
+Below the pill bar: large bold white text showing the live transcript. This text appears word by word as the user speaks. Font is Inter Bold, 28sp, centered, white. Show the text "Ola se cab book karo Marine Drive ke liye" as the example in the reference.
+At the very bottom of the sheet: a small audio waveform icon — just the standard waveform bars icon, white, centered. This does not need to be animated for now, just show the static icon.
+When the user stops speaking, the bottom sheet slides back down and transitions to the processing state.
+The X button on the pill cancels and returns to home.
+
+Screen 3 — Processing State
+The dotted ring morphs from circle to blob shape over 800 milliseconds. The blob is large and organic as shown in Image 2. The text inside changes from "SPEAK TO BEGIN" to "Processing..." still in monospace with blinking cursor.
+Below the ring area, show three lines of narration text that update sequentially. Each new line appears at the top and the previous lines shift down and fade. Show text like "समझ रहा हूँ..." then "Ola खोल रहा हूँ..." then "Destination डाल रहा हूँ..." Each line fades from white to gray to invisible as newer lines appear.
+No buttons on this screen. User just watches.
+
+Screen 4 — Result State (Agent Mode)
+Full black screen. Center: a white checkmark inside a white circle outline, 56dp. Below it: the task title in Inter Bold white 26sp — for example "Cab Booked". Below that: a dark card #1A1A1A with rounded corners 16dp and border #2A2A2A, showing task details as rows — each row has a small white icon on the left and white text on the right. For Ola: car icon + "Marine Drive", clock icon + "12 min", person icon + "Ramesh".
+Bottom of screen: two buttons in a row. Left is an outlined pill button with white border and white text "नया काम". Right is a filled white pill button with black text "देखो".
+
+Screen 5 — Result State (Answer Mode)
+Same black background. No checkmark. Just the answer text in a large dark card taking up 60% of the screen height. The answer is displayed in Inter Regular white, 18sp, line height 1.6. A small speaker icon below the card with text "सुनो / Listen again" in gray.
+Single centered button at bottom: white outlined pill "नया सवाल / New question".
+
+Screen 6 — Confirmation Gate
+Black background with an extremely subtle warm tint — barely perceptible. Center: a white pause icon inside a white circle outline 52dp. Below: bold question text in white 24sp — "Cab book karein?" Below: a dark detail card same as result screen showing destination, time, cost.
+Bottom: two large buttons side by side. Both 64dp tall, 16dp rounded corners — NOT pill shaped, square-ish corners so they look like serious action buttons. Left button: white border, white text "नहीं / No". Right button: white filled background, black text "हाँ / Yes". Both buttons are equal width, equal height. These must be large enough for an elderly person to tap confidently. Below the buttons: small gray centered text "या बोलो हाँ / नहीं".
+
+Screen 7 — History Screen (Image 3)
+Black background with a very subtle dot texture grain overlay — low opacity dots scattered across the background, barely visible, exactly as seen in Image 3.
+Header row: dark gray circle with gear icon on far left. App title text centered. Dark gray circle with search icon. Dark gray circle with right arrow icon.
+Below header: scrollable list of task cards. Each card is #1A1A1A background, rounded corners 16dp, border #2A2A2A at 1px. Inside each card: top row has a white emoji or icon followed by bold white title text 16sp. Second row has gray subtitle text 14sp. Third row has gray timestamp text 13sp. Cards have generous internal padding 18dp on all sides. Gap between cards is 10dp.
+Example cards exactly as shown in Image 3: car icon "Cab booked" / "Your Ola to Marine Drive is on its way." / "10:30 AM". Document icon "PM Kisan checked" / "Payment of Rs 2000 credited." / "9:15 AM". Chat bubble icon "Message sent" / "Sent to Rahul: 20 minute late hounga" / "8:45 AM".
+Bottom: a full-width dark rounded rectangle containing a segmented toggle. Left option "Threads" shown in white on white pill background — selected state. Right option "Spaces" shown in gray — unselected. This toggle switches between recent tasks and saved queries.
+
+EDGE GLOW — ACTIVATES ONLY DURING AGENT MODE
+When the backend returns a response with mode equal to agent and the Accessibility Service begins executing actions on another app, activate the edge glow overlay.
+The edge glow is a thin strip approximately 6dp wide running along the left edge and right edge of the screen simultaneously. The strip runs vertically for about 60% of the screen height, centered vertically. The color is periwinkle #818CF8 at 25% opacity. The strip has a gradient — transparent at top, full color at center, transparent at bottom.
+The glow pulses — it breathes from 20% opacity to 70% opacity on a 2-second cycle while the agent is working. When the agent completes successfully, the glow flashes bright to 100% opacity then fades out completely over 1.5 seconds. When the agent fails, same flash but at the error color #F87171. After fading the glow is completely invisible again.
+This uses Android SYSTEM_ALERT_WINDOW overlay drawn on top of everything using a non-touch-intercepting transparent overlay window. Touches pass through it to the app underneath.
+
+FLOATING BUBBLE
+A small circle 60dp diameter floats over all apps. Color is dark gray #1A1A1A with a white sparkle/star icon inside. It sits at bottom right of the screen. Draggable to any position. When tapped it opens the listening bottom sheet over whatever app is currently showing.
+The bubble has a subtle white glow ring around it — #FFFFFF at 8% opacity. When the agent mode is active, the bubble pulses with the periwinkle glow synced to the edge glow.
+
+BACKEND CONNECTION
+The Flutter app connects to a FastAPI backend running at http://10.0.2.2:8000 for emulator or http://YOUR_LAPTOP_IP:8000 for physical device. Store the backend URL in a config file so it can be changed without touching other code.
+All voice audio is recorded as WAV, sent to the /process endpoint as multipart form data. The response is JSON containing mode (answer or agent or confirm), title, answer text if answer mode, details array if agent mode, audio_base64 containing the Bulbul TTS response audio, and detected_language.
+Play the audio_base64 response immediately on receiving it — decode from base64 to bytes, write to temp file, play using just_audio package.
+For agent mode responses, after playing the audio, send the intent_data to the Kotlin Accessibility Service via MethodChannel named bharat_voice_os/accessibility with method name executeAction.
+
+ANDROID NATIVE — ACCESSIBILITY SERVICE
+Create BharatAccessibilityService.kt registered in AndroidManifest with BIND_ACCESSIBILITY_SERVICE permission. The service handles three actions for the demo: book_ola_cab which opens Ola and fills destination using resource ID com.olacabs.customer:id/et_pickup_drop, send_whatsapp which deep links to whatsapp://send?phone= with the contact number and message parameters, and check_pm_kisan which opens the browser to the PM Kisan portal URL.
+The service communicates with Flutter via MethodChannel. When Flutter sends executeAction with action name and parameters map, the service performs the corresponding action.
+The service also has a captureScreen method using the takeScreenshot API available on Android 11 and above which captures the current screen as a bitmap, converts to base64, and returns it to Flutter via a separate MethodChannel call for the vision agent loop.
+
+PERMISSIONS IN ANDROIDMANIFEST
+INTERNET, RECORD_AUDIO, SYSTEM_ALERT_WINDOW, BIND_ACCESSIBILITY_SERVICE, FOREGROUND_SERVICE. The overlay window permission SYSTEM_ALERT_WINDOW must be requested at runtime with a direct intent to Settings.ACTION_MANAGE_OVERLAY_PERMISSION because it cannot be granted via the normal permission dialog.
+
+PUBSPEC DEPENDENCIES
+record for audio recording, just_audio for audio playback, flutter_overlay_window for the floating bubble, permission_handler for runtime permissions, http for API calls, hive and hive_flutter for local history storage, provider for state management, google_fonts for Inter font, shared_preferences for first launch detection. Add google_fonts and space_mono to fonts if not available via google_fonts package.
+
+FIRST LAUNCH FLOW
+On very first launch show the onboarding screen (Image 4). User taps Get started. Show three permission screens one at a time — microphone permission, overlay permission with redirect to settings, accessibility service permission with redirect to accessibility settings. Each permission screen has a simple explanation in both Hindi and English, a large white button to grant it. After all three granted, save onboarding_complete to shared preferences and go to home screen. Never show onboarding again.
+
+WHAT NOT TO BUILD YET
+Do not build the RAG knowledge base integration. Do not build the Gemini vision agent loop. Do not build text input fallback. Do not build settings screen. Do not build language selection. These come later. For now the backend returns hardcoded mock responses for the three demo flows so the Flutter UI can be built and tested independently of the full AI backend.
+
+MOCK RESPONSES FOR TESTING
+When audio is sent to /process, the backend checks the transcript for keywords and returns the appropriate mock response. If transcript contains "ola" or "cab" return agent mode response for cab booking. If transcript contains "pm kisan" or "kisan" return answer mode with PM Kisan information. If transcript contains "rahul" or "whatsapp" return confirm mode for WhatsApp message. All other transcripts return a generic answer mode response. This allows complete UI testing without any real AI integration.
+
+FINAL INSTRUCTION TO ANTIGRAVITY
+Build the complete Flutter project with all screens, the custom dotted ring painter, the Kotlin Accessibility Service, the FastAPI mock backend, and the floating bubble overlay. Make the dotted ring visually match the reference images — organic, uneven, halftone density variation, morphing between circle and blob. Make every screen transition smooth with fade or slide animations. The app must run on a physical Android device connected via USB with flutter run. Do not ask clarifying questions. Build everything as specified. Where the specification does not cover a detail, match the reference images.

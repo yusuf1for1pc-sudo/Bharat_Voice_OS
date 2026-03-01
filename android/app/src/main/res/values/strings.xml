@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">Bharat Voice OS needs Accessibility privileges to navigate apps, tap buttons, scroll, and take screenshots for the Agent Vision Loop.</string>
+</resources>

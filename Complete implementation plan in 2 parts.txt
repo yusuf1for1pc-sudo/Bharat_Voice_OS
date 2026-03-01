@@ -1,0 +1,198 @@
+BHARAT VOICE OS — COMPLETE IMPLEMENTATION PLAN
+No code. Full detail. Ready to paste into Antigravity.
+
+PHASE 1 — FULLY WORKING AI MODEL
+
+What Phase 1 Means
+Every single interaction is real. User speaks, real microphone records, real Sarvam AI transcribes, real Sarvam-M classifies intent, real Gemini sees the phone screen, real Accessibility Service taps real buttons on real apps, real Bulbul speaks the result back. Zero simulations. Zero hardcoded text. Zero timers pretending to be AI.
+After Phase 1 the user can say anything in any Indian language and the AI will figure out what they want and do it on their phone.
+
+Component 1 — Backend
+File to create: backend/main.py
+File to update: backend/requirements.txt
+What requirements.txt must contain
+fastapi, uvicorn, python-multipart, requests, python-dotenv, google-generativeai, Pillow, httpx. Nothing else needed.
+What main.py must do — full detail
+The backend is a FastAPI server running on port 8000. It has three endpoints. Build all three.
+
+Endpoint 1 — POST /process
+This is the main endpoint. Flutter sends every voice recording here.
+Receives: a WAV audio file uploaded as multipart form data.
+Step 1 — Save the uploaded WAV bytes to a temporary file on disk.
+Step 2 — Send that WAV file to Sarvam Saarika v2.5 speech to text API. The API call must use language_code set to "unknown" so Saarika auto-detects the language. Do not hardcode Hindi or English. The response from Saarika contains two things: the transcript text and the detected language code such as hi-IN or en-IN or mr-IN.
+Step 3 — If the transcript is empty or Saarika returned an error, return a JSON error response to Flutter immediately. Do not proceed.
+Step 4 — Send the transcript text to Sarvam-M via the chat completions endpoint. The system prompt must tell Sarvam-M exactly this: you are an intent classifier for a voice assistant. The user speaks Hindi, English, Marathi, Tamil, Telugu, Bengali, Gujarati, or mixed Hinglish. Classify the input into exactly one of these intents: cab_booking with parameter destination, whatsapp_message with parameters contact and message, make_call with parameter contact, pm_kisan_query with no parameters, ayushman_query with no parameters, ration_card_query with no parameters, crop_disease_query with parameters crop and symptom, fertilizer_query with parameters crop and stage, mandi_price_query with parameters crop and location, food_order with parameters app and item and preference, open_app with parameter app_name, set_reminder with parameters time and task, general_query with no parameters. Return only valid JSON with fields intent, parameters as a nested object, confidence as a float between 0 and 1, and response_language which must match the detected language code passed to you. No explanation. No markdown. No text before or after. Only the JSON object.
+Step 5 — Parse the JSON returned by Sarvam-M. Strip any markdown code fences before parsing. If parsing fails try again once with a simpler prompt asking only for intent name and parameters.
+Step 6 — Route based on intent.
+If intent is pm_kisan_query or ayushman_query or ration_card_query or crop_disease_query or fertilizer_query or mandi_price_query or general_query then this is Answer Mode. Send the original transcript to Sarvam-M again with a different system prompt: answer this question helpfully and accurately in the language indicated by the language code. Use simple words that a farmer or small business owner can understand. Maximum three sentences. Do not use technical jargon. The user asked this question so answer it directly. Return the answer text. Then send that answer text to Sarvam Bulbul TTS API with the target_language_code set to the detected language, speaker set to meera, model set to bulbul:v1. Get back the base64 audio. Return to Flutter: mode is answer, transcript, detected_language, answer text, audio_base64.
+If intent is cab_booking or whatsapp_message or make_call then this is Confirm Mode. Build a human-readable confirmation question in the detected language. For cab_booking the question is something like "Shall I book a cab to Marine Drive?" with details showing destination and estimated cost. For whatsapp_message the question is "Shall I send this message to Rahul?" with details showing contact name and message text. Speak the confirmation question via Bulbul. Return to Flutter: mode is confirm, transcript, detected_language, intent_data containing the full intent and parameters, question text, details array, audio_base64.
+If intent is food_order or open_app or set_reminder or any other action intent that does not need confirmation then this is Agent Start Mode. Resolve the app package name using the mapping described in Endpoint 3. Build a goal description string in English for the vision agent. Build a narration string in the detected language telling the user what is about to happen. Speak the narration via Bulbul. Return to Flutter: mode is agent_start, transcript, detected_language, intent_data, app_package, goal, audio_base64.
+Step 7 — Delete the temporary WAV file before returning.
+
+Endpoint 2 — POST /agent_step
+This endpoint runs once per step of the vision agent loop. Flutter calls it repeatedly until the task is done.
+Receives JSON body with these fields: screenshot_base64 which is the current phone screen as a JPEG image encoded in base64, goal which is the task description string, history which is an array of previous step objects each containing action taken and reason, step_number which is an integer starting at 1.
+Step 1 — If step_number is greater than 15 return immediately with action failed and reason "Maximum steps reached. Task could not be completed automatically."
+Step 2 — Decode the screenshot_base64 to bytes. Load it as a PIL Image. Do not resize it. Keep it at original resolution so Gemini can see all UI details.
+Step 3 — Send the image plus a carefully constructed prompt to Gemini 2.5 Flash vision API using the google-generativeai Python SDK. The model name is gemini-2.5-flash-preview-0514 or the latest available flash model.
+The prompt must say exactly this: You are an AI agent controlling an Android smartphone screen to complete a task. Your task is: {goal}. Here is what you have done so far: {history as numbered list}. Look at this screenshot very carefully. Identify every button, text field, list item, icon, and piece of text visible on the screen. Then decide the single best next action to make progress toward completing the task. Important rules: never tap the same x and y coordinates as the previous step. If you see a payment screen or a screen asking for money confirmation, return confirm_needed. If you see a login screen or password field that is not part of the task, return failed with the reason that login is required. If you see a CAPTCHA image challenge, return confirm_needed with message asking the user to solve it. If the task appears successfully completed based on what you see on screen, return done with a result description and relevant details. If you have been on the same screen for three consecutive steps with no visible change, return failed. Coordinates you return must be actual pixel positions of real elements visible in the screenshot. The screen width is 1080 pixels and height is 2340 pixels for a typical Android phone — adjust if the screenshot dimensions differ. Return ONLY a single valid JSON object. No text before it. No text after it. No markdown. The JSON must have an action field which is one of: tap, type, scroll, swipe, back, wait, confirm_needed, done, failed. For tap include x and y as integers and reason as a string. For type include text as a string and reason as a string. For scroll include direction as up or down or left or right and distance as an integer in pixels and reason as a string. For swipe include x1 y1 x2 y2 as integers and reason as a string. For back include reason as a string. For wait include seconds as an integer and reason as a string. For confirm_needed include message as a user-facing string in simple Hindi or English and details as an array of objects each with icon and text fields. For done include result as a string and details as an array of objects each with icon and text fields. For failed include reason as a string.
+Step 4 — Parse the JSON from Gemini response. Strip markdown if present. If parsing fails return failed with reason "Vision model returned invalid response."
+Step 5 — Return the parsed action JSON directly to Flutter.
+
+Endpoint 3 — POST /open_app
+Receives JSON body with field app_name as a string.
+Maintains a hardcoded dictionary mapping common Indian app names and their variations to Android package names. The dictionary must include at minimum: ola and ola cabs maps to com.olacabs.customer, uber maps to com.ubercab, rapido maps to com.rapido.passenger, whatsapp maps to com.whatsapp, telegram maps to org.telegram.messenger, swiggy maps to in.swiggy.android, zomato maps to com.application.zomato, youtube maps to com.google.android.youtube, chrome maps to com.android.chrome, settings maps to com.android.settings, camera maps to com.android.camera2, contacts maps to com.android.contacts, maps and google maps maps to com.google.android.apps.maps, irctc maps to cz.palko.adventures, amazon maps to in.amazon.mShop.android.shopping, flipkart maps to com.flipkart.android.
+Searches the dictionary case-insensitively and also checks if the app_name is contained within any key. Returns the matched package name or null if not found.
+
+Endpoint 4 — POST /confirm
+Called when user says yes on the confirmation screen.
+Receives JSON body with intent_data which is the full intent object saved from the /process response.
+Resolves app_package from intent. Builds goal string. Builds narration in detected language. Speaks narration via Bulbul. Returns: mode is agent_start, app_package, goal, audio_base64.
+
+Environment variables needed in .env file
+SARVAM_API_KEY — get from sarvam.ai after signup
+GEMINI_API_KEY — get from aistudio.google.com after signup
+GROQ_API_KEY — get from console.groq.com after signup (backup LLM, free)
+
+Component 2 — AudioService
+File to create: lib/services/audio_service.dart
+This service is a ChangeNotifier. It handles everything related to microphone input.
+It must expose these capabilities:
+A method called startRecording that requests microphone permission if not already granted. If permission denied show an error. If granted start recording audio using the record package. Record in WAV format at 16000 Hz sample rate mono channel. Save to the app's temporary directory with a filename like recording_timestamp.wav. While recording continuously poll the amplitude using the record package's amplitude stream. Expose the current amplitude as a double between 0.0 and 1.0 as a public property. Call notifyListeners every time amplitude updates so the waveform widget reacts in real time.
+A method called stopRecording that stops the recording and returns the file path of the saved WAV file as a String. Also resets amplitude to 0.0 and calls notifyListeners.
+A method called playAudio that receives a base64 string, decodes it to bytes, writes to a temporary file, and plays using just_audio AudioPlayer. Expose isPlaying as a boolean. Expose playbackAmplitude as a simulated value that pulses while audio is playing for the AI voice orb widget to animate.
+A method called stopAudio that stops playback.
+
+Component 3 — ApiService
+File to create: lib/services/api_service.dart
+This service handles all HTTP communication with the FastAPI backend.
+It must read the backend URL from config.dart. The config must have a comment explaining how to change the IP address for physical device testing.
+It must expose these methods:
+processVoice that receives an audio file path as String. Creates a multipart HTTP POST request. Attaches the WAV file. Sends to backend /process endpoint. Has a timeout of 30 seconds. On success returns the parsed JSON response map. On timeout or network error returns an error map with a user-friendly message in Hindi.
+agentStep that receives screenshot_base64 as String, goal as String, history as List of maps, step_number as integer. Sends POST to /agent_step. Has a timeout of 15 seconds. Returns parsed action JSON map.
+openApp that receives app_name as String. Sends POST to /open_app. Returns package name string or null.
+confirmAction that receives intent_data as map. Sends POST to /confirm. Returns parsed response map.
+All methods must handle HTTP errors gracefully. If the server returns 500 or any error status, return an error map. Never throw uncaught exceptions.
+
+Component 4 — AgentLoopService
+File to create: lib/services/agent_loop_service.dart
+This is the most complex service. It manages the entire vision agent loop.
+It must expose a Stream of AgentStepUpdate objects. Each AgentStepUpdate contains: step_number, action_taken, reason, narration_text, is_complete, is_failed, needs_confirm, confirm_message, confirm_details, result, result_details.
+It must expose a method called startLoop that receives app_package as String, goal as String, detected_language as String. This method does the following sequence:
+First emit an update with narration "App khol raha hun" in the detected language.
+Then send a message to the Kotlin Accessibility Service via MethodChannel bharat_voice_os/accessibility with method openApp and parameter app_package. Wait 2500 milliseconds for the app to open and render.
+Then begin the loop. Maximum 15 iterations. Each iteration:
+Call the Kotlin Accessibility Service via MethodChannel bharat_voice_os/screenshot with method captureScreen. Receive back a base64 JPEG string of the current screen.
+Call ApiService.agentStep with the screenshot, goal, current history, and current step number.
+Parse the returned action. Add the action to history list.
+Based on action type: if tap call Kotlin executeGesture with tap action and coordinates. If type call Kotlin executeGesture with type action and text. If scroll call Kotlin executeGesture with scroll action and parameters. If back call Kotlin executeGesture with back action. If wait pause for the specified seconds. If done emit final success update and stop loop. If failed emit final failure update and stop loop. If confirm_needed emit confirmation update and pause loop waiting for user response.
+After each gesture wait 1500 milliseconds for the screen to update before taking next screenshot.
+Emit an AgentStepUpdate after every action with the narration text translated to the detected language.
+Expose a method called resumeAfterConfirm that resumes the loop after the user taps yes on the confirmation screen.
+Expose a method called stopLoop that cancels the loop immediately.
+Stuck detection: if the same x and y coordinates appear in the action for three consecutive steps with no screen change detected, emit failed update.
+
+Component 5 — Update VoiceChatScreen
+File to update: lib/screens/voice_chat_screen.dart
+Do not change any unnesasary chages  UI code. Do not change any animation. Do not change any widget structure. Only replace the simulated timer logic with real service calls.
+Replace the 3 second timer that simulates listening with a call to AudioService.startRecording.
+Replace the hardcoded transcript text with the real transcript from the ApiService response.
+Replace the hardcoded language "Hindi" flashcard with the real detected_language from the ApiService response converted to a display name. hi-IN shows Hindi. en-IN shows English. mr-IN shows Marathi. ta-IN shows Tamil. te-IN shows Telugu. bn-IN shows Bengali. gu-IN shows Gujarati. Any other code shows the code itself.
+Replace the 2 second processing delay with a real call to AudioService.stopRecording to get the WAV path followed by ApiService.processVoice with that path.
+Replace the simulated AI speaking animation with real audio playback via AudioService.playAudio using the audio_base64 from the API response. The AI voice orb animation should react to AudioService.playbackAmplitude.
+When the API returns mode answer navigate to ResultAnswerScreen with the real answer text and play the real audio.
+When the API returns mode confirm navigate to ConfirmationScreen with the real question and details and play the real audio.
+When the API returns mode agent_start start AgentLoopService.startLoop with the real app_package and goal. Navigate to a new AgentModeScreen that listens to the AgentLoopService stream and shows narration updates in real time. When the stream emits done navigate to ResultAgentScreen with the real details.
+
+Component 6 — Kotlin Accessibility Service Updates
+File to update: android/app/src/main/kotlin/com/bharatvoiceos/BharatAccessibilityService.kt
+Do not remove anything that already exists. Only add these new methods.
+Add a MethodChannel for screenshots with name bharat_voice_os/screenshot. When it receives method captureScreen call the Android 11+ takeScreenshot API on Display.DEFAULT_DISPLAY. In the success callback receive the ScreenshotResult. Convert the HardwareBuffer to a Bitmap using Bitmap.wrapHardwareBuffer. Compress the Bitmap to JPEG at 70% quality into a ByteArrayOutputStream. Encode the bytes to base64 string. Return the base64 string back to Flutter via the MethodChannel result callback.
+Add to the existing MethodChannel for accessibility with name bharat_voice_os/accessibility a new method called executeGesture. When this method is called receive the parameters map containing action type and relevant coordinates or text. Based on action type:
+For tap: create a Path object. Call moveTo with the x and y coordinates. Create a GestureDescription.Builder. Add a StrokeDescription with the path, start time 0, duration 100 milliseconds. Call dispatchGesture with the built GestureDescription.
+For type: find the currently focused AccessibilityNodeInfo using rootInActiveWindow.findFocus with FOCUS_INPUT. Create a Bundle. Put the text string with key ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE. Call performAction ACTION_SET_TEXT on the focused node.
+For scroll: create a Path from start coordinates to end coordinates based on direction and distance. Create a GestureDescription stroke with duration 300 milliseconds. Dispatch the gesture.
+For back: call performGlobalAction with GLOBAL_ACTION_BACK.
+Add a method called openApp. Receive the package name string. Create a launch intent using packageManager.getLaunchIntentForPackage. Add FLAG_ACTIVITY_NEW_TASK to the intent flags. Call startActivity. Return success to Flutter.
+All MethodChannel handlers must run on the main thread using Handler with Looper.getMainLooper.
+
+Component 7 — AudioCacheService
+File to create: lib/services/audio_cache_service.dart
+On app startup this service calls Sarvam Bulbul TTS once for each of these nine phrases and stores the returned audio bytes in memory as a Map from phrase key to audio bytes:
+app_opening maps to "App khol raha hun"
+searching maps to "Dhundh raha hun"
+tapping maps to "Kar raha hun"
+typing maps to "Type kar raha hun"
+scrolling maps to "Scroll kar raha hun"
+wait maps to "Thoda ruko"
+done maps to "Kaam ho gaya"
+error maps to "Kuch problem aayi"
+confirm maps to "Confirm karo"
+All nine are generated in Hindi at startup. Expose a method playNarration that receives a phrase key and immediately plays the corresponding cached audio using just_audio. Because the audio is already in memory there is zero latency. The AgentLoopService uses this to narrate each step as it happens.
+If a Bulbul call fails at startup skip that phrase silently. Do not block app startup.
+
+Component 8 — Edge Glow Overlay
+File to create: lib/widgets/edge_glow_overlay.dart
+This widget uses the flutter_overlay_window package to draw two thin strips on the left and right edges of the phone screen using SYSTEM_ALERT_WINDOW permission.
+The strips are 6 dp wide. They run vertically for 60 percent of the screen height centered vertically. The color is periwinkle #818CF8.
+The overlay has five states. Idle means the strips are completely invisible with zero opacity. Listening means the strips glow at 25 percent opacity pulsing on a 2 second cycle synced to voice amplitude. Processing means the strips glow at 30 percent opacity pulsing on a 1.5 second cycle. Active means the strips glow at 40 percent opacity pulsing on a 0.8 second cycle brightening to 80 percent on each action execution. Success means the strips flash to 100 percent then fade to zero over 1.5 seconds in mint green #34D399. Error means the strips flash to 100 percent then fade to zero over 1 second in soft red #F87171.
+The overlay uses FLAG_NOT_TOUCHABLE so all touches pass through to the app underneath.
+Connect the overlay state to AppStateProvider so it automatically updates when the app state changes.
+
+Component 9 — Fix Onboarding Permissions
+File to update: lib/screens/onboarding_screen.dart
+Currently tapping Grant advances regardless of permission result. Fix this.
+For microphone permission: call permission_handler's Permission.microphone.request(). Only advance if result is PermissionStatus.granted. If denied show a red error message saying microphone access is required for voice input. Show the Grant button again.
+For overlay permission: SYSTEM_ALERT_WINDOW cannot be requested via permission_handler normally. Instead open Android Settings directly using the intent android.settings.action.MANAGE_OVERLAY_PERMISSION with the app's package URI. After the user returns from Settings check FlutterOverlayWindow.isPermissionGranted(). Only advance if true.
+For Accessibility Service permission: open Android Settings to the Accessibility section using the intent android.settings.ACCESSIBILITY_SETTINGS. After user returns check if BharatAccessibilityService is enabled by querying the AccessibilityManager. Only advance if enabled.
+
+Component 10 — Real History Storage
+File to update: lib/screens/history_screen.dart
+File to create: lib/services/history_service.dart
+Create HistoryService that wraps Hive storage. Every time a task completes successfully in AgentLoopService or ApiService save a HistoryItem to Hive with these fields: id, title, subtitle, icon name, timestamp, was_successful.
+In history_screen.dart replace the hardcoded mock cards with real cards loaded from HistoryService. Load on screen open. Display in reverse chronological order newest first.
+
+Component 11 — Config File Fix
+File to update: lib/config.dart
+Change the backend URL from 10.0.2.2:8000 to the actual laptop IP address. Add a clear comment above it explaining: to find your laptop IP on Windows run ipconfig in command prompt and look for IPv4 Address under your WiFi adapter. On Mac or Linux run ifconfig. The demo phone and laptop must be on the same WiFi network or the phone must be connected to the laptop's mobile hotspot. Replace the IP here every time you change networks.
+
+PHASE 2 — HARDCODED DEMO VERSION
+
+What Phase 2 Means
+Phase 2 is not a separate app. It is a fast path that lives inside the same codebase as Phase 1. When the intent matches one of the three demo flows, the backend signals Flutter to use the hardcoded path instead of the vision loop. The vision loop is still there and still works for everything else. The hardcoded paths are just more reliable and faster for the specific three demo scenarios.
+Phase 2 requires Phase 1 to already be working. The backend, AudioService, ApiService, and Kotlin gesture methods must all exist. Phase 2 only adds the routing decision and the three specific flow implementations.
+
+Change 1 — Backend Routing Addition
+In backend/main.py in the /process endpoint add a check after intent classification. Before routing to agent_start mode check if the intent is in a hardcoded_flows list. The hardcoded_flows list contains cab_booking, whatsapp_message, pm_kisan_query. If the intent is in this list add a field to the response called use_hardcoded set to true. If the intent is not in this list use_hardcoded is false and the normal vision loop path applies. The rest of the response is identical either way.
+
+Change 2 — Flutter Routing Addition
+In VoiceChatScreen or AgentLoopService when the API response contains use_hardcoded true do not start the vision loop. Instead call a HardcodedFlowService with the intent name and parameters.
+File to create: lib/services/hardcoded_flow_service.dart
+This service has three methods.
+Method bookOlaCab receives destination as String. Sends to Kotlin via MethodChannel bharat_voice_os/accessibility with method bookOlaCab and parameter destination. Does not take screenshots. Does not call Gemini. Returns immediately after sending the command. Kotlin handles the rest.
+Method sendWhatsApp receives contact as String and message as String. Sends to Kotlin via MethodChannel bharat_voice_os/accessibility with method sendWhatsApp and parameters contact and message. Returns immediately.
+Method checkPmKisan sends to Kotlin via MethodChannel bharat_voice_os/accessibility with method checkPmKisan. Returns immediately.
+
+Change 3 — Kotlin Hardcoded Flow Additions
+In BharatAccessibilityService.kt the three methods already exist but need to be verified to work correctly.
+bookOlaCab must: open Ola using com.olacabs.customer package. Wait 2500 milliseconds. Find destination field by resource ID com.olacabs.customer:id/et_pickup_drop. Tap it. Type the destination string character by character with 80 milliseconds between each character. Wait 1200 milliseconds for search results. Find the first search result in the list and tap it. Wait 700 milliseconds. Find the confirm or book button and tap it. Send narration updates to Flutter at each step via invokeMethod narrationUpdate.
+sendWhatsApp must: construct the deep link string whatsapp://send with phone parameter set to the contact's number and text parameter set to the message. Fire this as an Android Intent with FLAG_ACTIVITY_NEW_TASK. WhatsApp opens with contact and message pre-filled. Wait 1500 milliseconds. Find the send button by resource ID com.whatsapp:id/send or by content description Send. Tap it. Send narration update done to Flutter.
+checkPmKisan must: open Chrome browser using the package com.android.chrome. Pass the URL https://pmkisan.gov.in as the intent data. Wait 2000 milliseconds for page to load. Send narration update to Flutter saying the website is open. Do nothing further — the user sees the website.
+
+Change 4 — Pacing in Hardcoded Flows
+This is what makes hardcoded flows look like real navigation instead of instant teleportation.
+In BharatAccessibilityService.kt define a constants object called DemoPacing with these values: APP_OPEN_WAIT is 2500 milliseconds, FIELD_FIND_WAIT is 800 milliseconds, CHAR_TYPE_DELAY is 80 milliseconds, AFTER_TYPE_WAIT is 600 milliseconds, SEARCH_RESULT_WAIT is 1200 milliseconds, RESULT_SELECT_WAIT is 700 milliseconds, CONFIRM_BUTTON_WAIT is 1000 milliseconds.
+All Handler postDelayed calls in the hardcoded flows must use these constants. Do not hardcode raw millisecond values anywhere else. This makes it easy to adjust pacing without hunting through the code.
+
+What Antigravity Should Build First
+Tell Antigravity to build in this exact order and not proceed to the next item until the current one compiles and runs:
+First build the backend main.py with all four endpoints. Test it manually using curl or Postman before touching Flutter.
+Second build AudioService with real recording. Test that it produces a valid WAV file.
+Third build ApiService. Test that it sends the WAV and receives a valid response from the backend.
+Fourth wire ApiService into VoiceChatScreen replacing timers. Test full voice to transcript to Bulbul audio playback on device.
+Fifth add captureScreen to Kotlin. Test that it returns a non-empty base64 string.
+Sixth add all gesture methods to Kotlin. Test tap and type independently.
+Seventh build AgentLoopService. Test with a simple open Chrome and navigate to google.com task.
+Eighth add HardcodedFlowService and the hardcoded routing in backend. Test Ola cab booking end to end.
+Ninth build AudioCacheService, EdgeGlowOverlay, fix permissions, fix history. These are all parallel and can be built in any order.
+Do not touch any existing UI code at any point. Do not refactor anything. Do not rename files. Do not change the state management structure. Only add new files and add new methods to existing files.
