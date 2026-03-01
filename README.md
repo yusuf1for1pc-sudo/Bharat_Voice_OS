@@ -5,7 +5,7 @@ It performs real in-app tasks automatically - no reading, typing, or menu naviga
 Built to deliver digital independence for non-literate smartphone users.
 
 🔗 Demo / Access
-Repo: [Github repo link](https://github.com/yusuf1for1pc-sudo/health-surveillance-system.git)
+Repo: [Github repo link](https://github.com/yusuf1for1pc-sudo/Bharat_Voice_OS.git)
 
 
 🚀 What the System Does
