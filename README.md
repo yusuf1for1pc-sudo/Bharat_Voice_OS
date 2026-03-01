@@ -2,6 +2,7 @@
 
 Bharat Voice OS is a voice-first AI system that enables users to operate Android smartphones entirely through natural speech in Indian languages.
 It performs real in-app tasks automatically - no reading, typing, or menu navigation required.
+
 Built to deliver digital independence for non-literate smartphone users.
 
 🔗 Demo / Access
